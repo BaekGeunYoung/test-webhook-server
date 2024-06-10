@@ -25,14 +25,13 @@ fun main(vararg args: String) {
 }
 
 fun Application.module(secret: String) {
-    configureRouting(secret)
+    val verifier = Webhook(secret)
+    configureRouting(verifier)
 }
 
-fun Application.configureRouting(secret: String) {
+fun Application.configureRouting(webhookVerifier: Webhook) {
     routing {
         post("/webhook-test") {
-            val wh = Webhook(secret)
-
             val payload = call.receiveText()
             val header = java.net.http.HttpHeaders.of(call.request.headers.toMap()) { _, _ -> true }
 
@@ -41,10 +40,31 @@ fun Application.configureRouting(secret: String) {
             println("Header: $header")
 
             try {
-                wh.verify(payload, header)
+                webhookVerifier.verify(payload, header)
                 println("Webhook Verification Succeeded")
 
                 call.respond(HttpStatusCode.OK, "OK")
+            } catch (e: Exception) {
+                val msg = "Webhook Verification Failed: $e"
+                println(msg)
+
+                call.respond(HttpStatusCode.BadRequest, msg)
+            }
+        }
+
+        post("/confirm-test") {
+            val payload = call.receiveText()
+            val header = java.net.http.HttpHeaders.of(call.request.headers.toMap()) { _, _ -> true }
+
+            println("Webhook received")
+            println("Payload: $payload")
+            println("Header: $header")
+
+            try {
+                webhookVerifier.verify(payload, header)
+                println("Webhook Verification Succeeded")
+
+                call.respond(HttpStatusCode.OK, "{\"errorMessage\":\"컨펌 에러 메세지 테스트\"}")
             } catch (e: Exception) {
                 val msg = "Webhook Verification Failed: $e"
                 println(msg)
