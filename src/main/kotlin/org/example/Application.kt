@@ -52,7 +52,7 @@ fun Application.configureRouting(webhookVerifier: Webhook) {
             }
         }
 
-        post("/confirm-test") {
+        post("/confirm-success-test") {
             val payload = call.receiveText()
             val header = java.net.http.HttpHeaders.of(call.request.headers.toMap()) { _, _ -> true }
 
@@ -64,13 +64,17 @@ fun Application.configureRouting(webhookVerifier: Webhook) {
                 webhookVerifier.verify(payload, header)
                 println("Webhook Verification Succeeded")
 
-                call.respond(HttpStatusCode.OK, "{\"errorMessage\":\"컨펌 에러 메세지 테스트\"}")
+                call.respond(HttpStatusCode.OK, "OK")
             } catch (e: Exception) {
                 val msg = "Webhook Verification Failed: $e"
                 println(msg)
 
                 call.respond(HttpStatusCode.BadRequest, msg)
             }
+        }
+
+        post("/confirm-fail-test") {
+            call.respond(HttpStatusCode.BadRequest, """{"errorMessage":"컨펌 에러 메세지 테스트"}""")
         }
     }
 }
